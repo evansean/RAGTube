@@ -1,0 +1,2 @@
+# RAGTube
+RAGtube is an interactive AI application that transforms YouTube videos into conversational knowledge sources.  Paste a YouTube link, and RAGtube automatically extracts the transcript, stores it in a vector database, and lets you ask questions, explore topics, or summarize the video — all through a conversational chat interface.  Built with Streamlit and LangChain, RAGtube showcases how Retrieval-Augmented Generation (RAG) can be applied to multimedia content, bridging video understanding and language models.
