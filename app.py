@@ -8,6 +8,7 @@ from langchain_ollama import ChatOllama
 from utils.rag_chain import create_memory
 from langchain_huggingface import HuggingFaceEndpoint, ChatHuggingFace
 from dotenv import load_dotenv
+import os
 
 load_dotenv()
 
@@ -26,7 +27,13 @@ if "chat_history" not in st.session_state:
 if 'conversation' not in st.session_state:
     st.session_state['conversation'] =None
 if "llm" not in st.session_state:
-    st.session_state.llm = ChatOllama(model="llama3", temperature=0)
+    # st.session_state.llm = ChatOllama(model="llama3", temperature=0)
+    st.session_state.llm = ChatHuggingFace(
+    repo_id="meta-llama/Llama-3.1-8B-chat",  # Chat model
+    task="text-generation",
+    model_kwargs={"temperature": 0.1},
+    huggingfacehub_api_token=os.getenv("HUGGINGFACEHUB_API_TOKEN"),
+)
 if "memory" not in st.session_state:
     st.session_state.memory = create_memory(st.session_state.llm)
 
