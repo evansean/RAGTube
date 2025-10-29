@@ -1,8 +1,9 @@
 from langchain_ollama.llms import OllamaLLM
-from langchain_classic.chains import LLMChain 
+from langchain_classic.chains.llm import LLMChain
+from langchain_classic.chains.conversation.base import ConversationChain 
 from langchain_classic.chains.summarize import load_summarize_chain
 from langchain_classic.memory import ConversationSummaryMemory
-from langchain_classic.prompts import PromptTemplate
+from langchain_classic.prompts import PromptTemplate, ChatPromptTemplate, SystemMessagePromptTemplate, HumanMessagePromptTemplate
 from langchain_huggingface import HuggingFaceEndpoint, ChatHuggingFace
 from dotenv import load_dotenv
 
@@ -14,77 +15,46 @@ def create_memory(llm):
         llm=llm,
         memory_key="chat_history",
         input_key="question",
-        return_messages=False  # we just want summary text
+        return_messages=False
     )
 
-def summarize_video(docs):
+def summarize_video(docs, llm):
     """Summarize the content of a video using RAG."""
-    # Initialize Ollama LLM
-    llm = OllamaLLM(model="llama3")
-#     llm = HuggingFaceEndpoint(
-#     repo_id="deepseek-ai/DeepSeek-R1-0528",
-#     task="text-generation",
-#     max_new_tokens=512,
-#     do_sample=False,
-#     repetition_penalty=1.03,
-#     provider="auto",  # let Hugging Face choose the best provider for you
-# )
-    
-#     llm = ChatHuggingFace(llm=llm)
-
-
     chain = load_summarize_chain(llm, chain_type="map_reduce", verbose=True)
 
     # Run the summarization
     summary = chain.invoke(docs)
     return summary['output_text']
 
-def run_rag_query(vectordb, query, memory):
+def run_rag_query(vectordb, query, memory, llm):
     """Run a RAG query against the vector store."""
-    # Initialize Ollama LLM
-    llm = OllamaLLM(model="llama3", temperature=0.1)
-#     llm = HuggingFaceEndpoint(
-#     repo_id="deepseek-ai/DeepSeek-R1-0528",
-#     task="text-generation",
-#     max_new_tokens=512,
-#     do_sample=False,
-#     repetition_penalty=1.03,
-#     provider="auto",  # let Hugging Face choose the best provider for you
-# )
-#     llm = ChatHuggingFace(llm=llm)
 
-
-    # Retrieve relevant documents
-    retriever = vectordb.as_retriever(search_type="mmr", search_kwargs={"k": 5})
-    print(dir(retriever))
+    retriever = vectordb.as_retriever(search_type="mmr", search_kwargs={"k": 3})
 
     docs = retriever.invoke(query)
 
     context = "\n\n".join([doc.page_content for doc in docs])
 
-    template = """You are a helpful video assistant that answers questions based on a video.
-        Use the video context and the conversation summary below to give an accurate answer.
-        If the question is not answerable using the provided context, use your own knowledge."
-
-        Conversation summary:
-        {chat_history}
-
-        Video context:
-        {context}
-
-        User question:
-        {question}
-
-        Answer:
-    """
-    prompt = PromptTemplate(
-        input_variables=["chat_history", "context", "question"],
-        template=template,
-    )
+    chat_prompt = ChatPromptTemplate.from_messages([
+        SystemMessagePromptTemplate.from_template(
+            "You are a helpful and friendly video assistant. "
+            "Answer user questions based on the video transcript and past conversation. "
+            "If the transcript doesn't contain the answer, use your own knowledge. "
+            "Keep responses natural and concise, as if talking to a human."
+        ),
+        HumanMessagePromptTemplate.from_template(
+            "Previous conversation:\n{chat_history}\n\n"
+            "Video transcript excerpts:\n{context}\n\n"
+            "User question:\n{question}\n\n"
+            "Answer naturally and directly. "
+            "Do not repeat 'based on the conversation summary and video context' in your answer. "
+            "Only refer to the video context if necessary."
+        ),
+    ])
 
     chain = LLMChain(
         llm=llm,
-        prompt=prompt,
+        prompt=chat_prompt,
         memory=memory,
         verbose=True,
     )
