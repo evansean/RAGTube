@@ -9,8 +9,8 @@
    - Splits transcripts into manageable chunks suitable for vector embedding.
 
 2. **Vector Store & Retrieval**
-   - Implements a **vector database** to store document embeddings.
-   - Uses **MMR (Maximal Marginal Relevance)** or similarity search for retrieval:
+   - Implements a **Chroma vector database** to store document embeddings.
+   - Uses **MMR (Maximal Marginal Relevance)** for retrieval:
      - MMR ensures that the retrieved documents are both relevant and diverse, reducing redundancy in answers.
      - The retriever fetches the most pertinent chunks of the transcript in response to a query.
 
@@ -32,14 +32,14 @@
 
 ## Implementation Details
 
-- **Language Model:**  
+- **Large Language Model:**  
   `ChatOllama` (LLaMA 3) via the Ollama LLM API.
 
 - **Memory:**  
   Implemented using `ConversationSummaryMemory` to store and summarize prior conversation turns.
 
 - **Vector Store:**  
-  Stores embeddings of the video transcript for retrieval. Supports **MMR** and **cosine similarity search**.
+  Stores embeddings of the video transcript for retrieval using `Chroma DB`. Supports **MMR** and **cosine similarity search**.
 
 - **Prompting:**  
   - Uses a **ChatPromptTemplate** to guide the LLM in combining conversation history, video context, and user queries.
