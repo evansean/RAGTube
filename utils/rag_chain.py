@@ -6,8 +6,11 @@ from langchain_classic.memory import ConversationSummaryMemory
 from langchain_classic.prompts import PromptTemplate, ChatPromptTemplate, SystemMessagePromptTemplate, HumanMessagePromptTemplate
 from langchain_huggingface import HuggingFaceEndpoint, ChatHuggingFace
 from dotenv import load_dotenv
+import streamlit as st
+from huggingface_hub import login
 
 load_dotenv()
+login(token=st.secrets["HUGGINGFACEHUB_API_TOKEN"])
 
 def create_memory(llm):
     """Initialize conversation summary memory."""
@@ -41,6 +44,7 @@ def run_rag_query(vectordb, query, memory, llm):
             "Answer user questions based on the video transcript and past conversation. "
             "If the transcript doesn't contain the answer, use your own knowledge. "
             "Keep responses natural and concise, as if talking to a human."
+            "Respond in appropriate paragraph lengths"
         ),
         HumanMessagePromptTemplate.from_template(
             "Previous conversation:\n{chat_history}\n\n"

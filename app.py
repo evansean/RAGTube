@@ -9,7 +9,11 @@ from utils.rag_chain import create_memory
 from langchain_huggingface import HuggingFaceEndpoint, ChatHuggingFace
 from dotenv import load_dotenv
 import os
+from huggingface_hub import login, HfApi
+import os
 
+login(token=st.secrets["HUGGINGFACEHUB_API_TOKEN"])
+api = HfApi(token=os.getenv("HF_TOKEN"))
 load_dotenv()
 
 # --- PAGE CONFIG ---
@@ -28,12 +32,14 @@ if 'conversation' not in st.session_state:
     st.session_state['conversation'] =None
 if "llm" not in st.session_state:
     # st.session_state.llm = ChatOllama(model="llama3", temperature=0)
-    st.session_state.llm = ChatHuggingFace(
-    repo_id="meta-llama/Llama-3.1-8B-chat",  # Chat model
-    task="text-generation",
-    model_kwargs={"temperature": 0.1},
-    huggingfacehub_api_token=os.getenv("HUGGINGFACEHUB_API_TOKEN"),
+    llm = HuggingFaceEndpoint(
+    repo_id="deepseek-ai/DeepSeek-V3.1",  # Chat model
+    task="conversational",
+    temperature= 0,
+    provider="auto",
+    # huggingfacehub_api_token=st.secrets["HUGGINGFACEHUB_API_TOKEN"]
 )
+    st.session_state.llm = ChatHuggingFace(llm=llm)
 if "memory" not in st.session_state:
     st.session_state.memory = create_memory(st.session_state.llm)
 
