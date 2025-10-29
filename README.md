@@ -1,5 +1,7 @@
 # 🎥 RAGtube — Chat with YouTube Videos
 
+<img width="1919" height="975" alt="image" src="https://github.com/user-attachments/assets/12261a86-5312-4d70-8366-aaec5800eb40" />
+
 **RAGtube** is an interactive video assistant that allows users to **ask questions about YouTube videos** and receive accurate, conversational answers. Unlike traditional video summaries or static transcripts, RAGtube combines **retrieval-augmented generation (RAG)** with **multi-turn conversational memory** to provide context-aware responses. It can answer questions based on the video content, recall details from prior conversation turns, and even respond to general knowledge questions that go beyond the video.
 
 ## Core Features
