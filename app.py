@@ -1,25 +1,41 @@
 import streamlit as st
+from streamlit_chat import message
 from utils.loader import load_youtube_transcript
 from utils.vector_store import create_vectorstore
 from utils.rag_chain import summarize_video, run_rag_query
 from langchain_ollama.llms import OllamaLLM
+from langchain_ollama import ChatOllama
+
 from utils.rag_chain import create_memory
 from langchain_huggingface import HuggingFaceEndpoint, ChatHuggingFace
 from dotenv import load_dotenv
 
 load_dotenv()
 
-llm = HuggingFaceEndpoint(
-    repo_id="deepseek-ai/DeepSeek-R1-0528",
-    task="text-generation",
-    max_new_tokens=512,
-    do_sample=False,
-    repetition_penalty=1.03,
-    provider="auto",  # let Hugging Face choose the best provider for you
-)
+# llm = HuggingFaceEndpoint(
+#     repo_id="deepseek-ai/DeepSeek-R1-0528",
+#     task="text-generation",
+#     max_new_tokens=512,
+#     do_sample=False,
+#     repetition_penalty=1.03,
+#     provider="auto",  # let Hugging Face choose the best provider for you
+# )
 
 # --- PAGE CONFIG ---
 st.set_page_config(page_title="RAGtube 🎥", layout="wide")
+st.markdown("""
+<style>
+div[data-testid="stVerticalBlock"] div:has(div[data-testid="stChatMessage"]) {
+    height: 500px;
+    overflow-y: auto;
+    padding-right: 10px;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    background-color: #fafafa;
+}
+</style>
+""", unsafe_allow_html=True)
+
 
 # --- INITIAL SESSION STATE ---
 if "vectordb" not in st.session_state:
@@ -30,10 +46,12 @@ if "summary" not in st.session_state:
     st.session_state.summary = ""
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
+if 'conversation' not in st.session_state:
+    st.session_state['conversation'] =None
 
 # Initialize memory once
 if "memory" not in st.session_state:
-    llm = OllamaLLM(model="llama3")
+    llm = OllamaLLM(model="llama3", temperature=0.1)
 #     llm = HuggingFaceEndpoint(
 #     repo_id="deepseek-ai/DeepSeek-R1-0528",
 #     task="text-generation",
@@ -60,13 +78,12 @@ if load_btn and url_input:
     st.success("Vector store built.")
 
     with st.spinner("Summarizing video..."):
-        # summary = summarize_video(docs)
-        print("Summarizing video...")
+        summary = summarize_video(docs)
     st.success("Video summarized.")
 
     st.session_state.vectordb = vectordb
     st.session_state.video_url = url_input
-    st.session_state.summary = "summary"
+    st.session_state.summary = summary
     st.session_state.chat_history = []
     st.session_state.memory.clear()  # Reset memory when new video is loaded
     st.sidebar.success("Video loaded successfully!")
@@ -76,7 +93,7 @@ st.title("🎥 RAGtube — Chat with YouTube Videos")
 
 if st.session_state.video_url:
     # Layout: video left, chat right
-    col1, col2 = st.columns([2, 1])
+    col1, col2 = st.columns([2, 2])
 
     with col1:
         st.video(st.session_state.video_url)
@@ -85,23 +102,38 @@ if st.session_state.video_url:
 
     with col2:
         st.markdown("### 💬 Chat about the video")
-        user_query = st.text_input("Ask a question:", key="user_query")
 
-        if user_query and st.session_state.vectordb:
-            with st.spinner("Thinking..."):
-                response = run_rag_query(
-                    st.session_state.vectordb,
-                    user_query,
-                    st.session_state.memory
-                )
-            # Append to chat history for display
-            st.session_state.chat_history.append({"user": user_query, "assistant": response})
-            st.text_input("Ask a question:", value="", key="reset_input")  # Clear input
+        # Scrollable chat area
+        chat_container = st.container()
+        with chat_container:
+            for i, turn in enumerate(st.session_state.chat_history):
+                message(turn["user"], is_user=True, key=f"user_{i}")
+                message(turn["assistant"], key=f"assistant_{i}")
 
-        # Display chat history in reverse
-        for turn in reversed(st.session_state.chat_history):
-            st.markdown(f"🧑 **You:** {turn['user']}")
-            st.markdown(f"🤖 **AI:** {turn['assistant']}")
+        # Handle message sending safely
+        def handle_user_query():
+            query = st.session_state.user_query.strip()
+            if query and st.session_state.vectordb:
+                with st.spinner("Thinking..."):
+                    response = run_rag_query(
+                        st.session_state.vectordb,
+                        query,
+                        st.session_state.memory
+                    )
+                st.session_state.chat_history.append({"user": query, "assistant": response})
+                st.session_state.user_query = ""  # ✅ safely clears field
+            # No st.rerun() — Streamlit automatically reruns after callback
+
+        # Persistent chat input
+        st.text_input(
+            "Ask a question:",
+            key="user_query",
+            on_change=handle_user_query,  # Runs before rerun
+            placeholder="Type your question and press Enter...",
+        )
+
+
+
 
 else:
     st.info("👈 Enter a YouTube URL in the sidebar to begin.")

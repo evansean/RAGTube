@@ -42,7 +42,7 @@ def summarize_video(docs):
 def run_rag_query(vectordb, query, memory):
     """Run a RAG query against the vector store."""
     # Initialize Ollama LLM
-    llm = OllamaLLM(model="llama3")
+    llm = OllamaLLM(model="llama3", temperature=0.1)
 #     llm = HuggingFaceEndpoint(
 #     repo_id="deepseek-ai/DeepSeek-R1-0528",
 #     task="text-generation",
@@ -62,14 +62,14 @@ def run_rag_query(vectordb, query, memory):
 
     context = "\n\n".join([doc.page_content for doc in docs])
 
-    template = """You are a helpful video assistant that answers questions based on a video's transcript.
-        Use the transcript context and the conversation summary below to give an accurate answer.
-        If the answer isn't in the transcript, say "I don't know."
+    template = """You are a helpful video assistant that answers questions based on a video.
+        Use the video context and the conversation summary below to give an accurate answer.
+        If the question is not answerable using the provided context, use your own knowledge."
 
         Conversation summary:
         {chat_history}
 
-        Transcript context:
+        Video context:
         {context}
 
         User question:
@@ -90,4 +90,4 @@ def run_rag_query(vectordb, query, memory):
     )
 
     response = chain.invoke({"question": query, "context": context})
-    return response
+    return response['text']
