@@ -22,7 +22,7 @@
    - Splits transcripts into manageable chunks suitable for vector embedding.
 
 2. **Vector Store & Retrieval**
-   - Implements a **Chroma vector database** to store document embeddings.
+   - Implements a **FAISS vector database** to store document embeddings.
    - Uses **MMR (Maximal Marginal Relevance)** for retrieval:
      - MMR ensures that the retrieved documents are both relevant and diverse, reducing redundancy in answers.
      - The retriever fetches the most pertinent chunks of the transcript in response to a query.
