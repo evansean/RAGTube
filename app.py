@@ -53,15 +53,12 @@ load_btn = st.sidebar.button("Load Video")
 if load_btn and url_input:
     with st.spinner("Fetching transcript..."):
         docs = load_youtube_transcript(url_input)
-    st.success("Transcript fetched.")
 
     with st.spinner("Building vector store..."):
         vectordb = create_vectorstore(docs)
-    st.success("Vector store built.")
 
     with st.spinner("Summarizing video..."):
         summary = summarize_video(docs, st.session_state.llm)
-    st.success("Video summarized.")
 
     st.session_state.vectordb = vectordb
     st.session_state.video_url = url_input
